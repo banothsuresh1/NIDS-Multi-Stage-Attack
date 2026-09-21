@@ -88,8 +88,14 @@ def test_encode_labels_maps_unseen_val_test_labels_to_benign(small_df):
 
     le, classes, K = encode_labels(df_train, df_val, df_test)
 
-    assert df_val.loc[df_val.index[0], "Label"] == "BENIGN"
+    benign_id = int(le.transform(["BENIGN"])[0])
+    # The K-way target (LabelID) falls back to BENIGN's id for a class the
+    # classifier never saw in training...
+    assert df_val.loc[df_val.index[0], "LabelID"] == benign_id
     assert "TotallyUnseenAttack" not in classes
+    # ...but the true Label string is preserved for downstream binary risk
+    # scoring, where a novel/zero-day attack type must still count as an attack.
+    assert df_val.loc[df_val.index[0], "Label"] == "TotallyUnseenAttack"
 
 
 def test_smote_enn_augment_increases_or_maintains_minority_count(small_df):
