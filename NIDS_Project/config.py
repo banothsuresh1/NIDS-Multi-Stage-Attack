@@ -22,9 +22,9 @@ DAY_FILES = {
     7: "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
 }
 
-TRAIN_DAYS = [1, 2]
-VAL_DAYS = [3]
-TEST_DAYS = [4, 5, 6, 7]
+TRAIN_DAYS = [1, 2, 3, 4]
+VAL_DAYS = [5]
+TEST_DAYS = [6, 7]
 
 SEED = 42
 K = 15
@@ -36,6 +36,7 @@ OUTLIER_CLIP_PERCENTILE = 99
 SMOTE_K_NEIGHBORS = 5
 ENN_N_NEIGHBORS = 3
 SMOTE_MIN_SAMPLES = 50  # only augment classes with count >= 50
+SMOTE_MAX_MAJORITY_ROWS = 80_000  # cap majority class before SMOTE+ENN so it finishes in minutes
 
 # ---------------------------------------------------------------------------
 # Stage 3 - Feature groups

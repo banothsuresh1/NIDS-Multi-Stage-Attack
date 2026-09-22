@@ -163,7 +163,9 @@ def smote_enn_augment(X_train, y_train, class_counts, K, seed=config.SEED):
 
     Classes with fewer than ``config.SMOTE_MIN_SAMPLES`` samples are left
     untouched (class weighting handles them instead — e.g. Heartbleed,
-    Infiltration).
+    Infiltration). The majority class is randomly subsampled to
+    ``config.SMOTE_MAX_MAJORITY_ROWS`` rows before SMOTEENN runs, so it
+    finishes in minutes rather than 30+ on the full training set.
 
     Parameters
     ----------
@@ -203,6 +205,44 @@ def smote_enn_augment(X_train, y_train, class_counts, K, seed=config.SEED):
             "smote_enn_augment: fewer than 2 augmentable classes present; returning original data"
         )
         return X_train, y_train
+
+    # ── Subsample majority class to cap total rows before SMOTE ──────────
+    # Keeps ALL minority-within-augment class samples, caps only the
+    # majority class to SMOTE_MAX_MAJORITY_ROWS so SMOTE+ENN finishes in
+    # minutes instead of 30+ on the full ~975k-row training set.
+    unique_aug_classes, aug_class_cnts = np.unique(y_to_augment, return_counts=True)
+    majority_class = unique_aug_classes[np.argmax(aug_class_cnts)]
+
+    majority_mask = y_to_augment == majority_class
+    minority_mask = ~majority_mask
+
+    X_majority = X_to_augment[majority_mask]
+    y_majority = y_to_augment[majority_mask]
+    X_minority = X_to_augment[minority_mask]
+    y_minority = y_to_augment[minority_mask]
+
+    if len(X_majority) > config.SMOTE_MAX_MAJORITY_ROWS:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(X_majority), size=config.SMOTE_MAX_MAJORITY_ROWS, replace=False)
+        X_majority = X_majority[idx]
+        y_majority = y_majority[idx]
+        logger.info(
+            "smote_enn_augment: majority class %s subsampled %d -> %d rows "
+            "before SMOTE+ENN to keep runtime bounded.",
+            majority_class,
+            int(majority_mask.sum()),
+            config.SMOTE_MAX_MAJORITY_ROWS,
+        )
+
+    X_to_augment = np.vstack([X_majority, X_minority])
+    y_to_augment = np.concatenate([y_majority, y_minority])
+
+    subsampled_counts = pd.Series(y_to_augment).value_counts().sort_index().to_dict()
+    logger.info(
+        "smote_enn_augment: class counts before SMOTE+ENN (after subsample): %s",
+        subsampled_counts,
+    )
+    # ── End subsample block ───────────────────────────────────────────────
 
     min_class_count = int(pd.Series(y_to_augment).value_counts().min())
     k_neighbors = min(config.SMOTE_K_NEIGHBORS, max(1, min_class_count - 1))

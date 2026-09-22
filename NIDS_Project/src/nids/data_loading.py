@@ -2,7 +2,7 @@
 
 Loads the seven CIC-IDS2017 per-day CSV files, fixes the dataset's known
 data-quality issues, and produces a strict chronological
-train (Days 1-2) / validation (Day 3) / test (Days 4-7) split.
+train (Days 1-4) / validation (Day 5) / test (Days 6-7) split.
 
 No random shuffling occurs anywhere in this module: rows are sorted by
 flow start time within each day and days are concatenated in calendar
@@ -93,7 +93,7 @@ def load_all_days(dataset_dir: str | Path | None = None):
     Returns
     -------
     (df_train, df_val, df_test) : tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
-        Train = Days 1-2, Validation = Day 3, Test = Days 4-7.
+        Train = Days 1-4, Validation = Day 5, Test = Days 6-7.
         CRITICAL: no shuffling occurs anywhere in this function.
     """
     dataset_dir = Path(dataset_dir) if dataset_dir is not None else config.DATASET_DIR
